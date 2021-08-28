@@ -30,10 +30,16 @@ const activityType = content => {
     case 'Rückzahlung':
       return 'Payback';
   }
-  if (content.includes('Depotbewertung') && !content[0].startsWith('Jahresdepotauszug')) {
+  if (
+    content.includes('Depotbewertung') &&
+    !content[0].startsWith('Jahresdepotauszug')
+  ) {
     return 'DepotStatement';
   }
-  if (content[0].startsWith('Depotauszug') || content[0].startsWith('Jahresdepotauszug')) {
+  if (
+    content[0].startsWith('Depotauszug') ||
+    content[0].startsWith('Jahresdepotauszug')
+  ) {
     return 'PostboxDepotStatement';
   }
 };
@@ -163,7 +169,7 @@ const findAmount = (textArr, type, baseCurrency, fxRate) => {
   }
 };
 
-const findFee = content => {
+const findFee = (content, fxRate) => {
   let totalFee = Big(0);
   const provisionIdx = content.indexOf('Provision');
   if (provisionIdx >= 0 && parseGermanNum(content[provisionIdx + 2])) {
@@ -195,6 +201,13 @@ const findFee = content => {
     totalFee = totalFee.plus(
       parseGermanNum(content[courtageFeeLineNumber + 2])
     );
+  }
+
+  const expensesLineNumber = content.indexOf('Fremde Spesen');
+  if (expensesLineNumber >= 0) {
+    totalFee = totalFee
+      .plus(parseGermanNum(content[expensesLineNumber + 2]))
+      .div(fxRate);
   }
 
   return +totalFee;
@@ -315,23 +328,13 @@ const parseBuySellDividend = (content, type) => {
     activity.fxRate = fxRate;
   }
 
-  switch (activity.type) {
-    case 'Buy':
-      activity.fee = findFee(content);
-      break;
-    case 'Sell':
-      activity.fee = findFee(content);
-      activity.tax = findTaxes(content);
-      break;
-    case 'Dividend':
-      activity.tax = findTaxes(content);
-      break;
-    case 'Payback':
-      activity.type = 'Sell';
-      activity.fee = findFee(content);
-      activity.tax = findTaxes(content);
-      break;
+  if (activity.type === 'Payback') {
+    activity.type = 'Sell';
   }
+
+  activity.fee = findFee(content, fxRate);
+  activity.tax = findTaxes(content);
+
   return validateActivity(activity);
 };
 
@@ -378,7 +381,7 @@ const parsePostboxDepotStatement = content => {
   let activities = [];
   let tmpdate;
 
-  if(!content[0].startsWith('Jahresdepotauszug')){
+  if (!content[0].startsWith('Jahresdepotauszug')) {
     if (content[0].split(' ')[2] == undefined) {
       return undefined;
     }
@@ -386,10 +389,7 @@ const parsePostboxDepotStatement = content => {
   } else {
     tmpdate = content[11];
   }
-  const [date, datetime] = createActivityDateTime(
-    tmpdate,
-    '23:59'
-  );
+  const [date, datetime] = createActivityDateTime(tmpdate, '23:59');
 
   while (idx >= 0) {
     let isinaddidx = 6;
