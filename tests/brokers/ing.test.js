@@ -498,6 +498,27 @@ describe('Broker: ING', () => {
         foreignCurrency: 'HKD',
       });
     });
+
+    test('Can parse document: 2021_US3682872078', () => {
+      const activities = ing.parsePages(dividendsSamples[9]).activities;
+
+      expect(activities.length).toEqual(1);
+      expect(activities[0]).toEqual({
+        broker: 'ing',
+        type: 'Dividend',
+        date: '2021-08-18',
+        datetime: '2021-08-18T' + activities[0].datetime.substring(11),
+        isin: 'US3682872078',
+        company: 'Gazprom PJSC Nam.Akt.(Sp.ADRs)/2 RL 5',
+        shares: 1400,
+        price: 0.2891377620538809,
+        amount: 404.78979343034035,
+        fee: 28.43790445683688,
+        tax: 103.42,
+        fxRate: 1.171324,
+        foreignCurrency: 'USD',
+      });
+    });
   });
 
   describe('Payback', () => {

@@ -204,7 +204,7 @@ const findAmount = (textArr, type, baseCurrency, fxRate) => {
   }
 };
 
-const findFee = content => {
+const findFee = (content, fxRate) => {
   let totalFee = Big(0);
   const provisionIdx = content.indexOf('Provision');
   if (provisionIdx >= 0 && parseGermanNum(content[provisionIdx + 2])) {
@@ -236,6 +236,13 @@ const findFee = content => {
     totalFee = totalFee.plus(
       parseGermanNum(content[courtageFeeLineNumber + 2])
     );
+  }
+
+  const expensesLineNumber = content.indexOf('Fremde Spesen');
+  if (expensesLineNumber >= 0) {
+    totalFee = totalFee
+      .plus(parseGermanNum(content[expensesLineNumber + 2]))
+      .div(fxRate);
   }
 
   return +totalFee;
@@ -356,23 +363,13 @@ const parseBuySellDividend = (content, type) => {
     activity.fxRate = fxRate;
   }
 
-  switch (activity.type) {
-    case 'Buy':
-      activity.fee = findFee(content);
-      break;
-    case 'Sell':
-      activity.fee = findFee(content);
-      activity.tax = findTaxes(content);
-      break;
-    case 'Dividend':
-      activity.tax = findTaxes(content);
-      break;
-    case 'Payback':
-      activity.type = 'Sell';
-      activity.fee = findFee(content);
-      activity.tax = findTaxes(content);
-      break;
+  if (activity.type === 'Payback') {
+    activity.type = 'Sell';
   }
+
+  activity.fee = findFee(content, fxRate);
+  activity.tax = findTaxes(content);
+
   return validateActivity(activity);
 };
 
