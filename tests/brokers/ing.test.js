@@ -199,6 +199,25 @@ describe('Broker: ING', () => {
         foreignCurrency: 'USD',
       });
     });
+
+    test('Can parse statement: 2022_DE0007100000', () => {
+      const activities = ing.parsePages(buySamples[8]).activities;
+
+      expect(activities.length).toEqual(1);
+      expect(activities[0]).toEqual({
+        broker: 'ing',
+        type: 'Buy',
+        date: '2020-03-17',
+        datetime: '2020-03-17T07:33:41.000Z',
+        isin: 'DE0007100000',
+        company: 'Daimler AG Namens-Aktien o.N. Nominale',
+        shares: 100,
+        price: 23.885,
+        amount: 2388.5,
+        fee: 10.87,
+        tax: 0,
+      });
+    });
   });
 
   describe('Sell', () => {

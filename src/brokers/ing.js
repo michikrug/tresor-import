@@ -15,6 +15,41 @@ const getValueByPreviousElement = (textArr, prev, range) => {
 };
 
 const activityType = content => {
+  const stockOrderLineNumber = content.indexOf('Wertpapierabrechnung');
+  if (stockOrderLineNumber >= 0) {
+    if (content[stockOrderLineNumber + 1].startsWith('Kauf')) {
+      return 'Buy';
+    } else if (content[stockOrderLineNumber + 1].startsWith('Verkauf')) {
+      return 'Sell';
+    }
+  }
+
+  if (
+    content.indexOf('Dividendengutschrift') >= 0 ||
+    content.indexOf('Ertragsgutschrift') >= 0 ||
+    content.indexOf('Zinsgutschrift') >= 0
+  ) {
+    return 'Dividend';
+  }
+
+  if (content.indexOf('Rückzahlung') >= 0) {
+    return 'Payback';
+  }
+
+  if (
+    content.includes('Depotbewertung') &&
+    content.indexOf('Jahresdepotauszug') == -1
+  ) {
+    return 'DepotStatement';
+  }
+
+  if (
+    content.indexOf('Depotauszug') >= 0 ||
+    content.indexOf('Jahresdepotauszug') >= 0
+  ) {
+    return 'PostboxDepotStatement';
+  }
+
   switch (content[0]) {
     case 'Wertpapierabrechnung':
       if (content[1].startsWith('Kauf')) {
@@ -30,10 +65,16 @@ const activityType = content => {
     case 'Rückzahlung':
       return 'Payback';
   }
-  if (content.includes('Depotbewertung') && !content[0].startsWith('Jahresdepotauszug')) {
+  if (
+    content.includes('Depotbewertung') &&
+    !content[0].startsWith('Jahresdepotauszug')
+  ) {
     return 'DepotStatement';
   }
-  if (content[0].startsWith('Depotauszug') || content[0].startsWith('Jahresdepotauszug')) {
+  if (
+    content[0].startsWith('Depotauszug') ||
+    content[0].startsWith('Jahresdepotauszug')
+  ) {
     return 'PostboxDepotStatement';
   }
 };
@@ -378,7 +419,7 @@ const parsePostboxDepotStatement = content => {
   let activities = [];
   let tmpdate;
 
-  if(!content[0].startsWith('Jahresdepotauszug')){
+  if (!content[0].startsWith('Jahresdepotauszug')) {
     if (content[0].split(' ')[2] == undefined) {
       return undefined;
     }
@@ -386,10 +427,7 @@ const parsePostboxDepotStatement = content => {
   } else {
     tmpdate = content[11];
   }
-  const [date, datetime] = createActivityDateTime(
-    tmpdate,
-    '23:59'
-  );
+  const [date, datetime] = createActivityDateTime(tmpdate, '23:59');
 
   while (idx >= 0) {
     let isinaddidx = 6;

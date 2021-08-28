@@ -7,6 +7,7 @@ export const buySamples = [
   require('./buy/2017_m_g_invest_savings_plan.json'),
   require('./buy/2020_ark_etf.json'),
   require('./buy/2020_newborn_acquisition.json'),
+  require('./buy/2020_DE0007100000.json'),
 ];
 
 export const sellSamples = [
