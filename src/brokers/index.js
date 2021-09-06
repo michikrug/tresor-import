@@ -10,6 +10,7 @@ import * as deutschebank from './deutschebank';
 import * as ebase from './ebase';
 import * as ersteBank from './ersteBank';
 import * as flatex from './flatex';
+import * as fondsdepotbank from './fondsdepotbank';
 import * as ing from './ing';
 import * as onvista from './onvista';
 import * as pb from './postbank';
@@ -32,6 +33,7 @@ export {
   ebase,
   ersteBank,
   flatex,
+  fondsdepotbank,
   ing,
   onvista,
   pb,
