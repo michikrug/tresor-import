@@ -156,31 +156,29 @@ export const parsePages = contents => {
     'Ertrag',
   ];
 
-  for (const page in contents) {
-    const fondInfo = contents[page].slice(
-      contents[page].indexOf('Depotabrechnung'),
-      contents[page].indexOf('Transaktion') ||
-        contents[page].findIndex(c => c.includes('Ausschüttung per '))
+  for (const pageContent of contents) {
+    const fondInfo = pageContent.slice(
+      pageContent.indexOf('Depotabrechnung'),
+      pageContent.indexOf('Transaktion') ||
+        pageContent.findIndex(c => c.includes('Ausschüttung per '))
     );
 
     let transaktionInfo;
     if (type === 'Buy') {
-      transaktionInfo = contents[page].map(c =>
-        c.replace('Wiederanlage', 'Kauf')
-      );
+      transaktionInfo = pageContent.map(c => c.replace('Wiederanlage', 'Kauf'));
       transaktionInfo = transaktionInfo.slice(
-        contents[page].indexOf('Kauf'),
-        contents[page].indexOf('Konto-')
+        transaktionInfo.indexOf('Kauf'),
+        transaktionInfo.indexOf('Konto-')
       );
     } else if (type === 'Sell') {
-      transaktionInfo = contents[page].slice(
-        contents[page].indexOf('Verkauf'),
-        contents[page].indexOf('Konto-')
+      transaktionInfo = pageContent.slice(
+        pageContent.indexOf('Verkauf'),
+        pageContent.indexOf('Konto-')
       );
     } else if (type === 'Dividend') {
-      transaktionInfo = contents[page].slice(
-        contents[page].findIndex(c => c.includes('Ausschüttung per ')),
-        contents[page].indexOf('Konto-')
+      transaktionInfo = pageContent.slice(
+        pageContent.findIndex(c => c.includes('Ausschüttung per ')),
+        pageContent.indexOf('Konto-')
       );
     }
 

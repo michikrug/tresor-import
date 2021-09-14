@@ -88,21 +88,35 @@ describe('Broker: fondsdepotbank', () => {
       });
     });
 
-    test('Can the order parsed from buy with reinvest', () => {
+    test('Can the order parsed from multiple savings with reinvest', () => {
       const activities = fondsdepotbank.parsePages(buySamples[3]).activities;
 
-      expect(activities.length).toEqual(3);
+      expect(activities.length).toEqual(4);
       expect(activities[2]).toEqual({
         broker: 'fondsdepotbank',
         type: 'Buy',
-        date: '2020-12-22',
-        datetime: '2020-12-22T' + activities[0].datetime.substring(11),
+        date: '2019-09-03',
+        datetime: '2019-09-03T' + activities[0].datetime.substring(11),
         isin: 'DE1234512345',
         wkn: 'ABCDEF',
         company: 'Testfond',
-        shares: 0.477,
-        price: 208.3438,
-        amount: 99.38,
+        shares: 0.217,
+        price: 175.4839,
+        amount: 38.08,
+        fee: 1.92,
+        tax: 0,
+      });
+      expect(activities[3]).toEqual({
+        broker: 'fondsdepotbank',
+        type: 'Buy',
+        date: '2019-09-20',
+        datetime: '2019-09-20T' + activities[0].datetime.substring(11),
+        isin: 'DE1234512345',
+        wkn: 'ABCDEF',
+        company: 'Testfond',
+        shares: 0.529,
+        price: 170.1701,
+        amount: 90.02,
         fee: 0,
         tax: 0,
       });
