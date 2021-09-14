@@ -70,18 +70,18 @@ const findShares = (content, type) => {
 
 const findTaxes = (content, type) => {
   if (type === 'Sell' || type === 'Dividend') {
-    const cap = parseGermanNum(
+    const gainsTax = parseGermanNum(
       content[content.indexOf('Kapitalertragsteuer') + 1]
     );
-    const soli = parseGermanNum(
+    const solidarySur = parseGermanNum(
       content[content.indexOf('Solidaritätszuschlag') + 1]
     );
-    let church = 0;
+    let churchTax = 0;
     const churchIdx = content.findIndex(t => t.includes('Kirchensteuer '));
     if (churchIdx !== -1) {
-      church = parseGermanNum(content[churchIdx + 1]);
+      churchTax = parseGermanNum(content[churchIdx + 1]);
     }
-    return +Big(cap).plus(soli).plus(church).abs();
+    return +Big(gainsTax).plus(solidarySur).plus(churchTax).abs();
   }
   return 0;
 };
@@ -109,7 +109,7 @@ export const canParseDocument = (pages, extension) => {
   );
 };
 
-const parseData = (fondInfo, transaktionInfo, type) => {
+const parseData = (fondInfo, transactionInfo, type) => {
   let activity = {
     broker: 'fondsdepotbank',
     type,
@@ -118,17 +118,18 @@ const parseData = (fondInfo, transaktionInfo, type) => {
   activity.company = findCompany(fondInfo);
   [activity.isin, activity.wkn] = findISINAndWKN(fondInfo);
   [activity.date, activity.datetime] = createActivityDateTime(
-    findDate(transaktionInfo, type)
+    findDate(transactionInfo, type)
   );
-  activity.shares = findShares(transaktionInfo, type);
-  // activity.price = findPrice(transaktionInfo, type);
-  activity.fee = findFee(transaktionInfo, type);
-  activity.amount = +Big(findAmount(transaktionInfo, type)).minus(activity.fee);
+  activity.shares = findShares(transactionInfo, type);
+  activity.fee = findFee(transactionInfo, type);
+  activity.amount = +Big(findAmount(transactionInfo, type)).minus(activity.fee);
+  // rounding the price to 4 digits after the decimal point
   activity.price = Number(
     Math.round(Number(+Big(activity.amount).div(activity.shares) + 'e4')) +
       'e-4'
   );
-  activity.tax = findTaxes(transaktionInfo, type);
+  // activity.price = findPrice(transactionInfo, type);
+  activity.tax = findTaxes(transactionInfo, type);
 
   return validateActivity(activity);
 };
@@ -163,45 +164,45 @@ export const parsePages = contents => {
         pageContent.findIndex(c => c.includes('Ausschüttung per '))
     );
 
-    let transaktionInfo;
+    let transactionInfo;
     if (type === 'Buy') {
-      transaktionInfo = pageContent.map(c => c.replace('Wiederanlage', 'Kauf'));
-      transaktionInfo = transaktionInfo.slice(
-        transaktionInfo.indexOf('Kauf'),
-        transaktionInfo.indexOf('Konto-')
+      transactionInfo = pageContent.map(c => c.replace('Wiederanlage', 'Kauf'));
+      transactionInfo = transactionInfo.slice(
+        transactionInfo.indexOf('Kauf'),
+        transactionInfo.indexOf('Konto-')
       );
     } else if (type === 'Sell') {
-      transaktionInfo = pageContent.slice(
+      transactionInfo = pageContent.slice(
         pageContent.indexOf('Verkauf'),
         pageContent.indexOf('Konto-')
       );
     } else if (type === 'Dividend') {
-      transaktionInfo = pageContent.slice(
+      transactionInfo = pageContent.slice(
         pageContent.findIndex(c => c.includes('Ausschüttung per ')),
         pageContent.indexOf('Konto-')
       );
     }
 
-    if (transaktionInfo.length) {
-      transaktionInfo = transaktionInfo.filter(c => !blockList.includes(c));
+    if (transactionInfo.length) {
+      transactionInfo = transactionInfo.filter(c => !blockList.includes(c));
       if (type === 'Buy') {
-        let idx = transaktionInfo.indexOf('Kauf');
+        let idx = transactionInfo.indexOf('Kauf');
         const first = idx;
         while (idx !== -1) {
           activities.push(
             parseData(
               fondInfo,
               [
-                ...transaktionInfo.slice(0, first),
-                ...transaktionInfo.slice(idx, idx + 10),
+                ...transactionInfo.slice(0, first),
+                ...transactionInfo.slice(idx, idx + 10),
               ],
               type
             )
           );
-          idx = transaktionInfo.indexOf('Kauf', idx + 1);
+          idx = transactionInfo.indexOf('Kauf', idx + 1);
         }
       } else {
-        activities.push(parseData(fondInfo, transaktionInfo, type));
+        activities.push(parseData(fondInfo, transactionInfo, type));
       }
     }
   }
