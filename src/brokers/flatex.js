@@ -403,8 +403,7 @@ const detectedButIgnoredDocument = content => {
 };
 
 const parsePage = (textArr, startLineNumber) => {
-  let type,
-    date,
+  let date,
     datetime,
     time,
     isin = findISIN(textArr, startLineNumber),
@@ -418,6 +417,9 @@ const parsePage = (textArr, startLineNumber) => {
     fxRate,
     foreignCurrency,
     baseCurrency;
+
+  /** @type {Importer.ActivityTypeUnion} */
+  let type;
 
   [fxRate, foreignCurrency, baseCurrency] = findForeignInformation(
     textArr,
@@ -476,6 +478,7 @@ const parsePage = (textArr, startLineNumber) => {
 
   [date, datetime] = createActivityDateTime(date, time);
 
+  /** @type {Importer.Activity} */
   const activity = {
     broker: 'flatex',
     type,

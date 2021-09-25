@@ -9,11 +9,24 @@ export const timeRegex = withSeconds => {
   return withSeconds ? /[0-2][0-9]:[0-9]{2}:[0-9]{2}/ : /[0-2][0-9]:[0-9]{2}/;
 };
 
+/**
+ *
+ * @param {Importer.page | string} content
+ * @param {boolean} [trimAndSplit=false]
+ * @returns {string}
+ */
 export function csvLinesToJSON(content, trimAndSplit = false) {
   let result = [];
 
   let lines = content;
+  //TODO: the trimAndSplit could be removed and typeof content used to decide weather we need to enter this branch
   if (trimAndSplit) {
+    if (typeof content !== 'string') {
+      throw new Error(
+        'trimAndSplit should only be true if a string is provided'
+      );
+    }
+
     lines = content.trim().split('\n');
   }
 
@@ -46,6 +59,7 @@ export function csvLinesToJSON(content, trimAndSplit = false) {
   return JSON.stringify(result);
 }
 
+/** @type { (n: string) => number } */
 export function parseGermanNum(n) {
   if (!n) {
     return 0;
@@ -53,12 +67,26 @@ export function parseGermanNum(n) {
   return parseFloat(n.replace(/\./g, '').replace(',', '.'));
 }
 
-// Gives the index for the first match of a regex within a 2D Array. Search is started at an optional offset
+/**
+ * Gives the index for the first match of a regex within a 2D Array. Search is started at an optional offset
+ *
+ * @param {string[]} array
+ * @param {RegExp} regex
+ * @param {number} [offset=0]
+ * @returns {number}
+ */
 export function findNextLineIndexByRegex(array, regex, offset = 0) {
   const nextIdx = array.slice(offset).findIndex(entry => regex.test(entry));
   return nextIdx >= 0 ? nextIdx + offset : -1;
 }
 
+/**
+ *
+ * @param {string[]} arr
+ * @param {number} idx
+ * @param {RegExp} regex
+ * @returns {number}
+ */
 export function findPreviousRegexMatchIdx(arr, idx, regex) {
   let bckwrdIdx = 1;
   while (idx - bckwrdIdx >= 0) {
@@ -70,6 +98,12 @@ export function findPreviousRegexMatchIdx(arr, idx, regex) {
   return -1;
 }
 
+/**
+ *
+ * @param {Importer.Activity | Partial<Importer.Activity>} activity
+ * @param {boolean} [findSecurityAlsoByCompany=false]
+ * @returns {Importer.Activity | undefined}
+ */
 export function validateActivity(activity, findSecurityAlsoByCompany = false) {
   // All fields must have a value unequal undefined
   if (!every(values(activity), a => !!a || a === 0)) {
@@ -248,7 +282,7 @@ export function validateActivity(activity, findSecurityAlsoByCompany = false) {
     return undefined;
   }
 
-  return activity;
+  return /** @type {Importer.Activity} */ (activity);
 }
 
 // Finds next regex match starting at the given offset
