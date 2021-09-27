@@ -1,17 +1,16 @@
 import { csvLinesToJSON } from '@/helper';
-import pdfjs from 'pdfjs-dist/build/pdf';
-import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.entry';
+import pdfjs from 'pdfjs-dist/webpack';
 import * as brokers from './brokers';
 import * as apps from './apps';
 import { isBrowser, isNode } from 'browser-or-node';
 
-pdfjs.GlobalWorkerOptions.workerSrc = pdfjsWorker;
-
+/** @type { Importer.Implementation[] } */
 export const allImplementations = [
   ...Object.values(brokers),
   ...Object.values(apps),
 ];
 
+/** @type { (pages: Importer.page[], extension: string) => Importer.Implementation[] | undefined} */
 export const findImplementation = (pages, extension) => {
   // The broker or app will be selected by the content of the first page
   return allImplementations.filter(implementation =>
@@ -19,6 +18,7 @@ export const findImplementation = (pages, extension) => {
   );
 };
 
+/** @type { (pages: Importer.page[], extension: string) => Importer.ParserResult } */
 export const parseActivitiesFromPages = (pages, extension) => {
   if (pages.length === 0) {
     // Without pages we don't have any activity
@@ -28,6 +28,7 @@ export const parseActivitiesFromPages = (pages, extension) => {
     };
   }
 
+  /** @type { Importer.ParserStatus } */
   let status;
   const implementations = findImplementation(pages, extension);
 
@@ -64,6 +65,7 @@ export const parseActivitiesFromPages = (pages, extension) => {
   };
 };
 
+/** @type { (file: File) => Promise<Importer.ParsedFile>} */
 export const parseFile = file => {
   return new Promise(resolve => {
     const extension = file.name.split('.').pop().toLowerCase();
@@ -78,6 +80,7 @@ export const parseFile = file => {
       }
 
       let fileContent, pdfDocument;
+      /** @type {Importer.page[]} */
       let pages = [];
 
       if (extension === 'pdf') {
@@ -86,13 +89,15 @@ export const parseFile = file => {
         }
 
         fileContent = new Uint8Array(e.target.result);
+        /** @type {pdfjs.PDFDocumentProxy} */
         pdfDocument = await pdfjs.getDocument(fileContent).promise;
 
         const loopHelper = Array.from(Array(pdfDocument.numPages)).entries();
         for (const [pageIndex] of loopHelper) {
-          pages.push(
-            await parsePageToContent(await pdfDocument.getPage(pageIndex + 1))
+          const parsedContent = await parsePageToContent(
+            await pdfDocument.getPage(pageIndex + 1)
           );
+          pages.push(parsedContent);
         }
       } else {
         if (typeof e.target.result !== 'string') {
@@ -161,6 +166,7 @@ const filterResultActivities = result => {
   return result;
 };
 
+/** @type {(page: pdfjs.PDFPageProxy) => Promise<string[]>} */
 const parsePageToContent = async page => {
   const parsedContent = [];
   const content = await page.getTextContent();

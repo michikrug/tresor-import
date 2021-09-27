@@ -262,6 +262,7 @@ const parseSavingsplan = content => {
       'dd.MM.yyyy',
       'dd.MM.yyyy HH:mm:ss'
     );
+    /** @type {Partial<Importer.Activity>} */
     let activity = {
       broker: 'dkb',
       type: 'Buy',
@@ -278,7 +279,9 @@ const parseSavingsplan = content => {
     activity.fee = +Big(
       parseGermanNum(content[content.indexOf('Summe', idx) + 1])
     ).minus(activity.amount);
-    activities.push(validateActivity(activity));
+    activities.push(
+      validateActivity(activity)
+    );
     idx = content.indexOf('Kauf', idx + 1);
   }
   return activities;
@@ -360,6 +363,7 @@ export const parsePages = pages => {
   const pieceIdx = allPages.findIndex(t => t.includes('Stück'));
   const isinIdx = findISINIdx(allPages, pieceIdx);
 
+  /** @type {Partial<Importer.Activity>} */
   let activity = {
     broker: 'dkb',
     type: typeOfDocument,

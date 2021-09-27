@@ -334,6 +334,7 @@ const findForeignInformation = textArr => {
 };
 
 const parseBuySellDividend = (content, type) => {
+  /** @type {Partial<Importer.Activity>} */
   let activity = {
     broker: 'ing',
     type,
@@ -388,6 +389,7 @@ const parseDepotStatement = content => {
     content[dateIdx].split(/\s+/)[1]
   );
   while (idx >= 0) {
+    /** @type {Importer.Activity} */
     let activity = {
       broker: 'ing',
       type: 'TransferIn',
@@ -431,6 +433,7 @@ const parsePostboxDepotStatement = content => {
     if (content[idx + 6].startsWith('ISIN')) {
       isinaddidx = 7; //necessary if currency is not euro
     }
+    /** @type {Importer.Activity} */
     let activity = {
       broker: 'ing',
       type: 'TransferIn',

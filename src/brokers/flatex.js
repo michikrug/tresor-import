@@ -380,7 +380,8 @@ export const canParseDocument = (pages, extension) => {
         line.includes('flatex Bank AG') ||
         line.includes('flatexDEGIRO Bank AG') ||
         line.includes('FinTech Group Bank AG') ||
-        line.includes('biw AG')
+        line.includes('biw AG') ||
+        line.includes('konto.flatex')
     ) &&
     (firstPageContent.some(line => line.includes('Kauf')) ||
       firstPageContent.some(line => line.includes('Verkauf')) ||
@@ -392,15 +393,17 @@ export const canParseDocument = (pages, extension) => {
 
 const detectedButIgnoredDocument = content => {
   return (
-    // When the document contains one of the following lines, we want to ignore these document.
+    // If the document contains one of the following phrases, we ignore it.
     content.some(line => line.toLowerCase().includes('auftragsbestätigung')) ||
-    content.some(line => line.toLowerCase().includes('einrichtung sparplan nr'))
+    content.some(line =>
+      line.toLowerCase().includes('einrichtung sparplan nr')
+    ) ||
+    content.some(line => line.toLowerCase().includes('onlinebanking'))
   );
 };
 
 const parsePage = (textArr, startLineNumber) => {
-  let type,
-    date,
+  let date,
     datetime,
     time,
     isin = findISIN(textArr, startLineNumber),
@@ -414,6 +417,9 @@ const parsePage = (textArr, startLineNumber) => {
     fxRate,
     foreignCurrency,
     baseCurrency;
+
+  /** @type {Importer.ActivityTypeUnion} */
+  let type;
 
   [fxRate, foreignCurrency, baseCurrency] = findForeignInformation(
     textArr,
@@ -472,6 +478,7 @@ const parsePage = (textArr, startLineNumber) => {
 
   [date, datetime] = createActivityDateTime(date, time);
 
+  /** @type {Importer.Activity} */
   const activity = {
     broker: 'flatex',
     type,

@@ -59,6 +59,7 @@ const parseShares = s => {
 };
 
 const parseTransaction = (transaction, typeCategory) => {
+  /** @type {Partial<Importer.Activity>} */
   let activity = {
     broker: 'peaks',
     fee: 0,
@@ -78,14 +79,15 @@ const parseTransaction = (transaction, typeCategory) => {
   activity.shares = parseShares(transaction[7]);
   activity.price = parseNum(transaction[8]);
   activity.amount = Math.abs(parseNum(transaction[9]));
-  if (typeCategory === 'Kosten für Peaks') {
+  if (typeCategory.toLowerCase().includes('kosten')) {
     // fees for the Peaks app are paid through the sale of shares
     activity.fee = activity.amount;
   }
   activities.push(validateActivity(activity));
-  if (typeCategory === 'Auszahlung Dividenden') {
+  if (typeCategory.toLowerCase().includes('dividende')) {
     // dividends are reinvested.
     // Copy the activity, set one to 'Dividend' and the other to 'Buy'
+    /** @type {Importer.Activity} */
     let secondActivity = {};
     Object.assign(secondActivity, activity);
     secondActivity.type = 'Dividend';
@@ -127,7 +129,6 @@ export const parsePages = contents => {
       let transaction = page.splice(0, 10);
       let activity = parseTransaction(transaction, typeCategory);
       activities = activities.concat(activity);
-      //activities = activities.flat();
       // find next date entry on page
       index = page.findIndex(findTransaction);
     }
