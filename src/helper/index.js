@@ -11,6 +11,15 @@ export const timeRegex = withSeconds => {
 
 /**
  *
+ * @param {string} content
+ * @returns {string}
+ */
+export const getGermanDate = content => {
+  return content.match(/[0-9]{2}.[0-9]{2}.[1-2][0-9]{3}/)[0];
+};
+
+/**
+ *
  * @param {Importer.page | string} content
  * @param {boolean} [trimAndSplit=false]
  * @returns {string}

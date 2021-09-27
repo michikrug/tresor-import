@@ -3,16 +3,33 @@ import {
   parseGermanNum,
   validateActivity,
   createActivityDateTime,
+  getGermanDate,
 } from '@/helper';
 
+/**
+ *
+ * @param {string[]} content
+ * @returns {string[]}
+ */
 const findISINAndWKN = content => {
   return content[content.indexOf('ISIN/WKN:') + 1].split(/\//);
 };
 
+/**
+ *
+ * @param {string[]} content
+ * @returns {string}
+ */
 const findCompany = content => {
   return content[content.indexOf('Fondsbezeichnung:') + 1];
 };
 
+/**
+ *
+ * @param {string[]} content
+ * @param {Importer.ActivityTypeUnion} type
+ * @returns {number}
+ */
 const findAmount = (content, type) => {
   if (type === 'Buy' || type === 'Sell') {
     return parseGermanNum(content[1]);
@@ -21,6 +38,12 @@ const findAmount = (content, type) => {
   }
 };
 
+/**
+ *
+ * @param {string[]} content
+ * @param {Importer.ActivityTypeUnion} type
+ * @returns {string}
+ */
 const findDate = (content, type) => {
   let dateLine;
   if (type === 'Buy') {
@@ -32,7 +55,7 @@ const findDate = (content, type) => {
       content.findIndex(t => t.includes('Ausschüttung per '))
     ].split(/\s+/)[2];
   }
-  return dateLine.match(/[0-9]{2}.[0-9]{2}.[1-2][0-9]{3}/)[0];
+  return getGermanDate(dateLine);
 };
 
 /* We do not need this as the price will be calculated from the amount and shares
@@ -48,6 +71,12 @@ const findPrice = (content, type) => {
 };
 */
 
+/**
+ *
+ * @param {string[]} content
+ * @param {Importer.ActivityTypeUnion} type
+ * @returns {number}
+ */
 const findFee = (content, type) => {
   if (type === 'Buy') {
     return parseGermanNum(content[6]);
@@ -55,6 +84,12 @@ const findFee = (content, type) => {
   return 0;
 };
 
+/**
+ *
+ * @param {string[]} content
+ * @param {Importer.ActivityTypeUnion} type
+ * @returns {number}
+ */
 const findShares = (content, type) => {
   if (type === 'Buy') {
     return Math.abs(parseGermanNum(content[7]));
@@ -68,6 +103,12 @@ const findShares = (content, type) => {
   return 0;
 };
 
+/**
+ *
+ * @param {string[]} content
+ * @param {Importer.ActivityTypeUnion} type
+ * @returns {number}
+ */
 const findTaxes = (content, type) => {
   if (type === 'Sell' || type === 'Dividend') {
     const gainsTax = parseGermanNum(
@@ -86,6 +127,11 @@ const findTaxes = (content, type) => {
   return 0;
 };
 
+/**
+ *
+ * @param {string[]} content
+ * @returns {Importer.ActivityTypeUnion | 'Ignored'}
+ */
 const getDocumentType = content => {
   if (content.includes('Anlagebetrag')) {
     return 'Buy';
@@ -99,6 +145,12 @@ const getDocumentType = content => {
   return undefined;
 };
 
+/**
+ *
+ * @param {Importer.page[]} pages
+ * @param {string} extension
+ * @returns {boolean}
+ */
 export const canParseDocument = (pages, extension) => {
   const firstPageContent = pages[0];
   return (
@@ -109,7 +161,15 @@ export const canParseDocument = (pages, extension) => {
   );
 };
 
+/**
+ *
+ * @param {string[]} fondInfo
+ * @param {string[]} transactionInfo
+ * @param {Importer.ActivityTypeUnion} type
+ * @returns {Importer.Activity}
+ */
 const parseData = (fondInfo, transactionInfo, type) => {
+  /** @type {Partial<Importer.Activity>} */
   let activity = {
     broker: 'fondsdepotbank',
     type,
@@ -123,17 +183,18 @@ const parseData = (fondInfo, transactionInfo, type) => {
   activity.shares = findShares(transactionInfo, type);
   activity.fee = findFee(transactionInfo, type);
   activity.amount = +Big(findAmount(transactionInfo, type)).minus(activity.fee);
-  // rounding the price to 4 digits after the decimal point
-  activity.price = Number(
-    Math.round(Number(+Big(activity.amount).div(activity.shares) + 'e4')) +
-      'e-4'
-  );
+  activity.price = +Big(activity.amount).div(activity.shares);
   // activity.price = findPrice(transactionInfo, type);
   activity.tax = findTaxes(transactionInfo, type);
 
   return validateActivity(activity);
 };
 
+/**
+ *
+ * @param {Importer.page[]} contents
+ * @returns {Importer.ParserResult}
+ */
 export const parsePages = contents => {
   const activities = [];
   const type = getDocumentType(contents[0]);
@@ -146,6 +207,11 @@ export const parsePages = contents => {
     };
   }
 
+  /*
+   * To unify the parsing of several document types we will remove some entries
+   * that do not add additional context but only change the order of the relevant structures.
+   * Those can appear on e.g. reinvestments or when exchanging positions.
+   */
   const blockList = [
     '1)',
     '2)',
@@ -157,15 +223,25 @@ export const parsePages = contents => {
     'Ertrag',
   ];
 
+  /*
+   * To retrieve all activities we need to iterate over all pages.
+   * As every page again starts with the same meta information part,
+   * we parse every page separately.
+   * We slice the array of contents to only look at the relevant parts of each transaction type.
+   */
   for (const pageContent of contents) {
+    // This part should only contain meta information about the traded fond
     const fondInfo = pageContent.slice(
       pageContent.indexOf('Depotabrechnung'),
       pageContent.indexOf('Transaktion') ||
         pageContent.findIndex(c => c.includes('Ausschüttung per '))
     );
 
+    // This part should only contain information about the specific transaction related to the fond
     let transactionInfo;
     if (type === 'Buy') {
+      // There can also be mixed transactions as buys and reinvestments,
+      // which we unify through replacements (Wiederanlage -> Kauf).
       transactionInfo = pageContent.map(c => c.replace('Wiederanlage', 'Kauf'));
       transactionInfo = transactionInfo.slice(
         transactionInfo.indexOf('Kauf'),
@@ -186,6 +262,8 @@ export const parsePages = contents => {
     if (transactionInfo.length) {
       transactionInfo = transactionInfo.filter(c => !blockList.includes(c));
       if (type === 'Buy') {
+        // As there can be multiple buy transactions on every page,
+        // we iterate over all appearances and add them to the activities list.
         let idx = transactionInfo.indexOf('Kauf');
         const first = idx;
         while (idx !== -1) {
