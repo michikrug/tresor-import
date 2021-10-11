@@ -14,6 +14,7 @@ a more detailed explanation is given behind brokername.
 | ebase                                                  | Transaction Log                                                      | Currently only the `.pdf` documents                                                |
 | Erste Bank (AT)                                        | Buy, Dividend                                                        |                                                                                    |
 | flatex / FinTech Group                                 | Buy, Sell, Dividend                                                  |                                                                                    |
+| Fondsdepot Bank GmbH                                   | Depot Statement (Buy, Sell, Dividend, Reinvestment)                  | Limitation: PDF files created after July 2021 might not be readable anymore        |
 | Gratisbroker                                           | See Baader Bank                                                      |                                                                                    |
 | ING (DE)                                               | Buy, Sell, Dividend, Depot Statement                                 |                                                                                    |
 | onvista                                                | Buy, Sell, Dividend                                                  |                                                                                    |
